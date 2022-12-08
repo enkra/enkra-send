@@ -6,11 +6,11 @@ import 'pages/description.dart';
 import 'pages/login.dart';
 import 'models/send.dart';
 
-void main() {
-  final deviceSendManager = DeviceSendManager.fromCurrentUrl();
+main() async {
+  final deviceSendManager = await DeviceSendManager.fromCurrentUrl();
 
   runApp(
-    ChangeNotifierProvider(
+    ChangeNotifierProvider<DeviceSendManager>(
       create: (context) {
         return deviceSendManager;
       },

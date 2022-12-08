@@ -4,6 +4,7 @@ import 'dart:html' as html;
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:nanoid/nanoid.dart';
+import 'package:cryptography/cryptography.dart';
 
 const String WS_API_URL = String.fromEnvironment('WS_API_URL');
 const String ENKRA_SEND_APP_URL = String.fromEnvironment('SEND_APP_URL');
@@ -23,24 +24,36 @@ class WaitToPairState extends NonPairedState {
 
   final String _sessionKey;
 
-  WaitToPairState._internal(WebSocketChannel channel, this._sessionKey)
-      : _channel = WsClient._internal(channel) {
+  final String _cipherKey;
+
+  WaitToPairState._internal(
+    WebSocketChannel channel,
+    this._sessionKey,
+    this._cipherKey,
+  ) : _channel = WsClient._internal(channel) {
     _listenChannel(_channel);
   }
 
-  factory WaitToPairState.create() {
+  static create() async {
     final sessionKey = nanoid();
     final wsUrl = Uri.parse('${WS_API_URL}/$sessionKey');
     final channel = WebSocketChannel.connect(wsUrl);
 
-    return WaitToPairState._internal(channel, sessionKey);
+    final algorithm = AesGcm.with128bits();
+    final secretKey = await algorithm.newSecretKey();
+    final cipherKey = base64Url.encode(await secretKey.extractBytes());
+
+    return WaitToPairState._internal(channel, sessionKey, cipherKey);
   }
 
-  factory WaitToPairState.connect(String sessionKey) {
+  factory WaitToPairState.connect(List<String> keys) {
+    final sessionKey = keys[0];
+    final cipherKey = keys[1];
+
     final wsUrl = Uri.parse('${WS_API_URL}/$sessionKey');
     final channel = WebSocketChannel.connect(wsUrl);
 
-    return WaitToPairState._internal(channel, sessionKey);
+    return WaitToPairState._internal(channel, sessionKey, cipherKey);
   }
 
   String sesssionKey() {
@@ -48,7 +61,7 @@ class WaitToPairState extends NonPairedState {
   }
 
   String pairingUrl() {
-    return '${ENKRA_SEND_APP_URL}/#/$_sessionKey';
+    return '${ENKRA_SEND_APP_URL}/#/$_sessionKey/$_cipherKey';
   }
 
   _listenChannel(channel) async {
@@ -67,7 +80,11 @@ class PairedState extends AppState {
 
   final List<String> _messages = [];
 
-  PairedState._internal(this._channel) {
+  final String _cipherKey;
+
+  final AesGcm aes = AesGcm.with128bits();
+
+  PairedState._internal(this._channel, this._cipherKey) {
     _listenChannel(_channel);
   }
 
@@ -75,31 +92,61 @@ class PairedState extends AppState {
     return _messages;
   }
 
-  void sendMessage(text) {
-    _channel.sink.add(text);
+  void sendMessage(text) async {
+    final content = await _encryptContent(text);
+    _channel.sink.add(content);
   }
 
-  _listenChannel(channel) async {
-    channel.listen((msg) {
+  _listenChannel(channel) {
+    channel.listen((msg) async {
       final message = jsonDecode(msg);
 
       if (message["event"] == "message") {
-        _messages.add(message["content"]);
+        final content = await _decryptContent(message["content"]);
+        _messages.add(content);
+
         notifyListeners();
       }
     });
+  }
+
+  _encryptContent(plaintext) async {
+    final secretKey = SecretKey(base64Url.decode(_cipherKey));
+
+    final nonce = aes.newNonce();
+
+    final secretBox = await aes.encrypt(
+      utf8.encode(plaintext),
+      secretKey: secretKey,
+      nonce: nonce,
+    );
+
+    return base64Url.encode(secretBox.concatenation());
+  }
+
+  _decryptContent(ciphertext) async {
+    final secretKey = SecretKey(base64Url.decode(_cipherKey));
+
+    final secretBox = SecretBox.fromConcatenation(
+      base64Url.decode(ciphertext),
+      nonceLength: 12,
+      macLength: 16,
+    );
+
+    final plaintext = await aes.decrypt(secretBox, secretKey: secretKey);
+    return utf8.decode(plaintext);
   }
 }
 
 class DeviceSendManager extends ChangeNotifier {
   AppState _state;
 
-  factory DeviceSendManager.fromCurrentUrl() {
-    final sessionKey = DeviceSendManager._extractSessionKeyFromUrl();
+  static fromCurrentUrl() async {
+    final keys = DeviceSendManager._extractSessionKeyFromUrl();
 
-    final state = sessionKey == null
-        ? WaitToPairState.create()
-        : WaitToPairState.connect(sessionKey!);
+    final state = keys == null
+        ? await WaitToPairState.create()
+        : WaitToPairState.connect(keys!);
 
     return DeviceSendManager._internal(state);
   }
@@ -114,10 +161,11 @@ class DeviceSendManager extends ChangeNotifier {
     final url = Uri.parse(html.window.location.href).fragment.trim();
     var tag = url.split('/');
 
-    final sessionKey = tag.length > 1 ? tag[1] : null;
+    if (tag.length > 2) {
+      final sessionKey = tag[1];
+      final cipherKey = tag[2];
 
-    if (sessionKey != "") {
-      return sessionKey;
+      return [sessionKey, cipherKey];
     } else {
       return null;
     }
@@ -126,7 +174,10 @@ class DeviceSendManager extends ChangeNotifier {
   _handlePaired() {
     final oldState = _state as WaitToPairState;
 
-    _state = PairedState._internal(oldState._channel);
+    _state = PairedState._internal(
+      oldState._channel,
+      oldState._cipherKey,
+    );
 
     notifyListeners();
   }
