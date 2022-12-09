@@ -142,7 +142,7 @@ class DeviceSendManager extends ChangeNotifier {
   AppState _state;
 
   static fromCurrentUrl() async {
-    final keys = DeviceSendManager._extractSessionKeyFromUrl();
+    final keys = DeviceSendManager._extractSessionKeyFromCurrentUrl();
 
     final state = keys == null
         ? await WaitToPairState.create()
@@ -157,9 +157,26 @@ class DeviceSendManager extends ChangeNotifier {
     }
   }
 
-  static _extractSessionKeyFromUrl() {
-    final url = Uri.parse(html.window.location.href).fragment.trim();
-    var tag = url.split('/');
+  pairTo(String url) async {
+    final keys = DeviceSendManager._extractSessionKeyFromUrl(Uri.parse(url));
+
+    _state = keys == null
+        ? await WaitToPairState.create()
+        : WaitToPairState.connect(keys!);
+
+    (_state as WaitToPairState)._setOnPaired(_handlePaired);
+
+    notifyListeners();
+  }
+
+  static _extractSessionKeyFromCurrentUrl() {
+    final url = Uri.parse(html.window.location.href);
+
+    return _extractSessionKeyFromUrl(url);
+  }
+
+  static _extractSessionKeyFromUrl(Uri url) {
+    final tag = url.fragment.trim().split('/');
 
     if (tag.length > 2) {
       final sessionKey = tag[1];

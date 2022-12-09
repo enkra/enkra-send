@@ -5,6 +5,7 @@ import 'pages/send.dart';
 import 'pages/description.dart';
 import 'pages/login.dart';
 import 'models/send.dart';
+import 'util.dart';
 
 main() async {
   final deviceSendManager = await DeviceSendManager.fromCurrentUrl();
@@ -51,41 +52,56 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Container(
-          width: 1080,
-          height: 720,
-          decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(10),
-                  topRight: Radius.circular(10),
-                  bottomLeft: Radius.circular(10),
-                  bottomRight: Radius.circular(10)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.5),
-                  spreadRadius: 5,
-                  blurRadius: 7,
-                  offset: const Offset(0, 3), // changes position of shadow
-                ),
-              ]),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(
-                child: buildLeftWidget(),
+      body: buildBody(),
+    );
+  }
+
+  buildBody() {
+    if (isMobile()) {
+      return buildMobile();
+    } else {
+      return buildDesktop();
+    }
+  }
+
+  buildDesktop() {
+    return Center(
+      child: Container(
+        width: 1080,
+        height: 720,
+        decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(10),
+                topRight: Radius.circular(10),
+                bottomLeft: Radius.circular(10),
+                bottomRight: Radius.circular(10)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.5),
+                spreadRadius: 5,
+                blurRadius: 7,
               ),
-              const Expanded(
-                child: Center(
-                  child: Description(),
-                ),
+            ]),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: buildLeftWidget(),
+            ),
+            const Expanded(
+              child: Center(
+                child: Description(),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  buildMobile() {
+    return buildLeftWidget();
   }
 
   buildLeftWidget() {
@@ -98,7 +114,7 @@ class _MyHomePageState extends State<MyHomePage> {
           pairedState: state,
         );
       } else {
-        return WaitToPair(
+        return Pairing(
           waitToPairState: state as WaitToPairState,
         );
       }
