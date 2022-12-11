@@ -1,11 +1,10 @@
-import "package:collection/collection.dart";
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:functional_widget_annotation/functional_widget_annotation.dart';
 
 import '../models/send.dart';
+import '../util.dart';
 
 part 'send.g.dart';
 
@@ -136,6 +135,8 @@ class _SendDialogState extends State<SendDialog> {
   Widget build(BuildContext context) {
     final scrollController = ScrollController();
 
+    final theme = Theme.of(context);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (scrollController.hasClients) {
         scrollController.jumpTo(scrollController.position.maxScrollExtent);
@@ -144,7 +145,7 @@ class _SendDialogState extends State<SendDialog> {
 
     return Column(children: [
       Expanded(
-        child: renderContent(scrollController),
+        child: renderContent(scrollController, theme),
       ),
       _Input(
         isEnterToSend: true,
@@ -172,7 +173,7 @@ class _SendDialogState extends State<SendDialog> {
     pairedState.sendMessage(msg);
   }
 
-  renderContent(scrollController) {
+  renderContent(scrollController, theme) {
     return AnimatedBuilder(
         animation: widget.pairedState,
         builder: (context, child) {
@@ -182,7 +183,7 @@ class _SendDialogState extends State<SendDialog> {
             return const _Placeholder();
           }
 
-          final noteItems = renderNotes(messages);
+          final noteItems = renderMessages(messages, theme);
 
           return ListView.builder(
             padding: const EdgeInsets.only(
@@ -199,11 +200,25 @@ class _SendDialogState extends State<SendDialog> {
         });
   }
 
-  renderNotes(notes) {
-    return notes
+  renderMessages(messages, theme) {
+    return messages
         .map(
-          (note) => MessageContainer(
-            child: Text(note),
+          (message) => MessageContainer(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(message),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.copy,
+                  ),
+                  color: Colors.black45,
+                  onPressed: () => copyToClipboardAutoClear(message),
+                ),
+              ],
+            ),
           ),
         )
         .toList();
