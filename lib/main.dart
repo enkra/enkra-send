@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'pages/send.dart';
 import 'pages/description.dart';
 import 'pages/login.dart';
-import 'models/send.dart';
+import 'models/device_send_manager.dart';
 import 'util.dart';
 
 main() async {

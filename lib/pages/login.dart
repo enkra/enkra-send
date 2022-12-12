@@ -7,7 +7,7 @@ import 'package:simple_barcode_scanner/enum.dart';
 import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
 import 'package:provider/provider.dart';
 
-import '../models/send.dart';
+import '../models/device_send_manager.dart';
 import '../util.dart';
 
 part 'login.g.dart';
