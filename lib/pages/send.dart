@@ -16,10 +16,9 @@ Widget __input(
   BuildContext context, {
   ValueChanged<String>? onSubmit,
   bool isEnterToSend = false,
+  required TextEditingController controller,
 }) {
   final theme = Theme.of(context);
-
-  final controller = TextEditingController();
 
   onSubmitted() {
     final content = controller.text;
@@ -140,6 +139,8 @@ class _SendDialogState extends State<SendDialog> {
 
     final theme = Theme.of(context);
 
+    final inputController = TextEditingController();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (scrollController.hasClients) {
         scrollController.jumpTo(scrollController.position.maxScrollExtent);
@@ -156,6 +157,7 @@ class _SendDialogState extends State<SendDialog> {
           SizedBox(width: 16),
           _QuickAction(
             title: "Copy clipboard",
+            onTap: () => _onCopyClipboard(inputController),
           ),
           _QuickAction(
             title: "Send picture",
@@ -165,11 +167,20 @@ class _SendDialogState extends State<SendDialog> {
       ),
       _Input(
         isEnterToSend: true,
+        controller: inputController,
         onSubmit: (msg) {
           onMessage(context, msg, scrollController);
         },
       ),
     ]);
+  }
+
+  Future<void> _onCopyClipboard(inputController) async {
+    final content = await copyFromClipboard();
+
+    if (content != null && content.trim() != "") {
+      inputController.text = content.trim();
+    }
   }
 
   Future<void> _openImageFile(BuildContext context) async {

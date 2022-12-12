@@ -29,3 +29,9 @@ void downloadBlobFile(String fileName, Uint8List bytes) {
   anchorElement.download = fileName;
   anchorElement.click();
 }
+
+Future<String?> copyFromClipboard() async {
+  final data = await Clipboard.getData("text/plain");
+
+  return data?.text;
+}
