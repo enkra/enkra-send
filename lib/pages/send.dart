@@ -135,21 +135,13 @@ class SendDialog extends StatefulHookWidget {
 class _SendDialogState extends State<SendDialog> {
   @override
   Widget build(BuildContext context) {
-    final scrollController = ScrollController();
-
     final theme = Theme.of(context);
 
     final inputController = TextEditingController();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (scrollController.hasClients) {
-        scrollController.jumpTo(scrollController.position.maxScrollExtent);
-      }
-    });
-
     return Column(children: [
       Expanded(
-        child: renderContent(scrollController, theme),
+        child: renderContent(theme),
       ),
       Row(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -169,7 +161,7 @@ class _SendDialogState extends State<SendDialog> {
         isEnterToSend: true,
         controller: inputController,
         onSubmit: (msg) {
-          onMessage(context, msg, scrollController);
+          onMessage(context, msg);
         },
       ),
     ]);
@@ -218,15 +210,7 @@ class _SendDialogState extends State<SendDialog> {
     pairedState.sendImage(file.name, data);
   }
 
-  onMessage(context, msg, scrollController) {
-    if (scrollController.hasClients) {
-      scrollController.animateTo(
-        scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
-
+  onMessage(context, msg) {
     final deviceSendManager =
         Provider.of<DeviceSendManager>(context, listen: false);
 
@@ -235,7 +219,7 @@ class _SendDialogState extends State<SendDialog> {
     pairedState.sendText(msg);
   }
 
-  renderContent(scrollController, theme) {
+  renderContent(theme) {
     return AnimatedBuilder(
         animation: widget.pairedState,
         builder: (context, child) {
@@ -246,6 +230,16 @@ class _SendDialogState extends State<SendDialog> {
           }
 
           final noteItems = renderMessages(messages, theme);
+
+          final scrollController = ScrollController();
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            await Future.delayed(const Duration(milliseconds: 100));
+
+            if (scrollController.hasClients) {
+              scrollController
+                  .jumpTo(scrollController.position.maxScrollExtent);
+            }
+          });
 
           return ListView.builder(
             padding: const EdgeInsets.only(
