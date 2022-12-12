@@ -1,14 +1,76 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
 
 import 'app_state.dart';
 import 'ws_client.dart';
 
+enum MessageType {
+  Text,
+  Image,
+}
+
+class Message {
+  final MessageType type;
+
+  final String? text;
+  final Uint8List? image;
+  final String? fileName;
+
+  Message(
+    this.type, {
+    this.text,
+    this.image,
+    this.fileName,
+  });
+
+  static Message? fromJson(String json) {
+    final message = jsonDecode(json);
+
+    if (message["type"] == "text") {
+      return Message(
+        MessageType.Text,
+        text: message["text"],
+      );
+    } else if (message["type"] == "image") {
+      final picture = base64.decode(message["image"]);
+      return Message(
+        MessageType.Image,
+        image: picture,
+        fileName: message["fileName"],
+      );
+    }
+    return null;
+  }
+
+  String toJson() {
+    switch (type) {
+      case MessageType.Text:
+        {
+          return jsonEncode({
+            "type": "text",
+            "text": text!,
+          });
+        }
+        break;
+      case MessageType.Image:
+        {
+          return jsonEncode({
+            "type": "image",
+            "image": base64.encode(image!.toList()),
+            "fileName": fileName!,
+          });
+        }
+        break;
+    }
+  }
+}
+
 class PairedState extends AppState {
   final WsClient _channel;
 
-  final List<String> _messages = [];
+  final List<Message> _messages = [];
 
   final String _cipherKey;
 
@@ -18,23 +80,42 @@ class PairedState extends AppState {
     _listenChannel(_channel);
   }
 
-  List<String> messages() {
-    return _messages;
+  get messages => _messages;
+
+  void sendText(text) async {
+    _sendMessage(Message(
+      MessageType.Text,
+      text: text,
+    ));
   }
 
-  void sendMessage(text) async {
-    final content = await _encryptContent(text);
+  void sendImage(String fileName, Uint8List image) async {
+    _sendMessage(Message(
+      MessageType.Image,
+      image: image,
+      fileName: fileName,
+    ));
+  }
+
+  _sendMessage(Message msg) async {
+    final content = await _encryptContent(msg.toJson());
     _channel.sink.add(content);
   }
 
   _listenChannel(channel) {
     channel.listen((msg) async {
-      final message = jsonDecode(msg);
+      final rawMessage = jsonDecode(msg);
 
-      if (message["event"] == "message") {
-        final content = await _decryptContent(message["content"]);
-        _messages.add(content);
+      if (rawMessage["event"] != "message") {
+        return;
+      }
 
+      final content = await _decryptContent(rawMessage["content"]);
+
+      final message = Message.fromJson(content);
+
+      if (message != null) {
+        _messages.add(message);
         notifyListeners();
       }
     });

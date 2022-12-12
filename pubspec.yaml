@@ -42,6 +42,7 @@ dependencies:
   nanoid: ^1.0.0
   cryptography: ^2.0.5
   simple_barcode_scanner: ^0.0.6
+  file_selector: ^0.9.2+2
 
 dev_dependencies:
   flutter_test:

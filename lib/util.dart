@@ -1,3 +1,5 @@
+import 'dart:html' as html;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -17,4 +19,13 @@ void copyToClipboardAutoClear(String? content) async {
   // Reduce risk of clipboard information leak.
   await Future.delayed(const Duration(seconds: 30));
   await Clipboard.setData(const ClipboardData(text: ""));
+}
+
+void downloadBlobFile(String fileName, Uint8List bytes) {
+  final blob = html.Blob([bytes]);
+  final url = html.Url.createObjectUrlFromBlob(blob);
+
+  html.AnchorElement anchorElement = html.AnchorElement(href: url);
+  anchorElement.download = fileName;
+  anchorElement.click();
 }
