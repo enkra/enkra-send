@@ -96,15 +96,15 @@ Widget __input(
 Widget __placeholder(
   BuildContext context,
 ) {
-  return Column(
+  return const Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const SizedBox(height: 16),
+      SizedBox(height: 16),
       Expanded(
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
+            children: [
               Text(
                 "Input text below or drop file here to send",
                 style: TextStyle(
@@ -146,7 +146,7 @@ class _SendDialogState extends State<SendDialog> {
       Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          SizedBox(width: 16),
+          const SizedBox(width: 16),
           _QuickAction(
             title: "Copy clipboard",
             onTap: () => _onCopyClipboard(inputController),
@@ -282,30 +282,39 @@ class _SendDialogState extends State<SendDialog> {
           break;
         case MessageType.Image:
           {
-            return MessageContainer(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8.0),
-                      child: Image.memory(
-                        message.image!,
-                        fit: BoxFit.fill,
+            return Align(
+              alignment: Alignment.centerLeft,
+              child: MessageContainer(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxHeight: 300,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8.0),
+                          child: Image.memory(
+                            message.image!,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.download,
+                    const SizedBox(width: 16),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.download,
+                      ),
+                      color: Colors.black45,
+                      onPressed: () => downloadBlobFile(
+                        message.fileName!,
+                        message.image!,
+                      ),
                     ),
-                    color: Colors.black45,
-                    onPressed: () => downloadBlobFile(
-                      message.fileName!,
-                      message.image!,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           }
@@ -330,7 +339,6 @@ Widget messageContainer(
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(10),
     ),
-    width: double.infinity,
     child: Material(
       color: backgroundColor,
       type: MaterialType.card,
@@ -360,6 +368,7 @@ Widget __quickAction(
     borderRadius: BorderRadius.circular(20),
     child: InkWell(
       borderRadius: BorderRadius.circular(20),
+      onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 4),
         padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -379,7 +388,6 @@ Widget __quickAction(
           ),
         ),
       ),
-      onTap: onTap,
     ),
   );
 }
