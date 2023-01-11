@@ -153,7 +153,11 @@ class _SendDialogState extends State<SendDialog> {
           ),
           _QuickAction(
             title: "Send picture",
-            onTap: () => _openImageFile(context),
+            onTap: () => _sendImage(context),
+          ),
+          _QuickAction(
+            title: "Send file",
+            onTap: () => _sendFile(context),
           ),
         ],
       ),
@@ -175,7 +179,7 @@ class _SendDialogState extends State<SendDialog> {
     }
   }
 
-  Future<void> _openImageFile(BuildContext context) async {
+  Future<void> _sendImage(BuildContext context) async {
     const XTypeGroup typeGroup = XTypeGroup(
       label: 'images',
       mimeTypes: [
@@ -208,6 +212,31 @@ class _SendDialogState extends State<SendDialog> {
     final pairedState = deviceSendManager.currentStateAs<PairedState>();
 
     pairedState.sendImage(file.name, data);
+  }
+
+  Future<void> _sendFile(BuildContext context) async {
+    const XTypeGroup typeGroup = XTypeGroup(
+      label: 'files',
+    );
+    final XFile? file = await openFile(
+      acceptedTypeGroups: <XTypeGroup>[typeGroup],
+    );
+
+    if (file == null) {
+      // Operation was canceled by the user.
+      return;
+    }
+    final String fileName = file.name;
+    final String filePath = file.path;
+
+    final data = await file.readAsBytes();
+
+    final deviceSendManager =
+        Provider.of<DeviceSendManager>(context, listen: false);
+
+    final pairedState = deviceSendManager.currentStateAs<PairedState>();
+
+    pairedState.sendFile(file.name, data);
   }
 
   onMessage(context, msg) {
@@ -256,68 +285,108 @@ class _SendDialogState extends State<SendDialog> {
         });
   }
 
+  renderText(message) {
+    return MessageContainer(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(message.text!),
+          ),
+          IconButton(
+            icon: const Icon(
+              Icons.copy,
+            ),
+            color: Colors.black45,
+            onPressed: () => copyToClipboardAutoClear(message.text!),
+          ),
+        ],
+      ),
+    );
+  }
+
+  renderImage(message) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: MessageContainer(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxHeight: 300,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8.0),
+                  child: Image.memory(
+                    message.content!,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            IconButton(
+              icon: const Icon(
+                Icons.download,
+              ),
+              color: Colors.black45,
+              onPressed: () => downloadBlobFile(
+                message.fileName!,
+                message.content!,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  renderFile(message, theme) {
+    return MessageContainer(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          CircleAvatar(
+            backgroundColor: Colors.white,
+            radius: 30,
+            child: Icon(
+              Icons.description_outlined,
+              color: theme.primaryColor,
+              size: 32,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(message.fileName!),
+          ),
+          IconButton(
+            icon: const Icon(
+              Icons.download,
+            ),
+            color: Colors.black45,
+            onPressed: () => downloadBlobFile(
+              message.fileName!,
+              message.content!,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   renderMessages(messages, theme) {
     return messages.map((message) {
       switch (message.type) {
         case MessageType.Text:
-          {
-            return MessageContainer(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(message.text!),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.copy,
-                    ),
-                    color: Colors.black45,
-                    onPressed: () => copyToClipboardAutoClear(message.text!),
-                  ),
-                ],
-              ),
-            );
-          }
+          return renderText(message);
           break;
         case MessageType.Image:
-          {
-            return Align(
-              alignment: Alignment.centerLeft,
-              child: MessageContainer(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxHeight: 300,
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8.0),
-                          child: Image.memory(
-                            message.image!,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.download,
-                      ),
-                      color: Colors.black45,
-                      onPressed: () => downloadBlobFile(
-                        message.fileName!,
-                        message.image!,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
+          return renderImage(message);
+          break;
+        case MessageType.File:
+          return renderFile(message, theme);
           break;
       }
     }).toList();

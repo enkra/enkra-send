@@ -9,19 +9,20 @@ import 'ws_client.dart';
 enum MessageType {
   Text,
   Image,
+  File,
 }
 
 class Message {
   final MessageType type;
 
   final String? text;
-  final Uint8List? image;
+  final Uint8List? content;
   final String? fileName;
 
   Message(
     this.type, {
     this.text,
-    this.image,
+    this.content,
     this.fileName,
   });
 
@@ -37,7 +38,14 @@ class Message {
       final picture = base64.decode(message["image"]);
       return Message(
         MessageType.Image,
-        image: picture,
+        content: picture,
+        fileName: message["fileName"],
+      );
+    } else if (message["type"] == "file") {
+      final file = base64.decode(message["content"]);
+      return Message(
+        MessageType.File,
+        content: file,
         fileName: message["fileName"],
       );
     }
@@ -58,7 +66,15 @@ class Message {
         {
           return jsonEncode({
             "type": "image",
-            "image": base64.encode(image!.toList()),
+            "image": base64.encode(content!.toList()),
+            "fileName": fileName!,
+          });
+        }
+      case MessageType.File:
+        {
+          return jsonEncode({
+            "type": "file",
+            "content": base64.encode(content!.toList()),
             "fileName": fileName!,
           });
         }
@@ -92,7 +108,15 @@ class PairedState extends AppState {
   void sendImage(String fileName, Uint8List image) async {
     _sendMessage(Message(
       MessageType.Image,
-      image: image,
+      content: image,
+      fileName: fileName,
+    ));
+  }
+
+  void sendFile(String fileName, Uint8List content) async {
+    _sendMessage(Message(
+      MessageType.File,
+      content: content,
       fileName: fileName,
     ));
   }
