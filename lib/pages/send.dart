@@ -1,5 +1,3 @@
-import 'dart:html';
-
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -17,6 +15,7 @@ Widget __input(
   ValueChanged<String>? onSubmit,
   bool isEnterToSend = false,
   required TextEditingController controller,
+  double elevation = 0,
 }) {
   final theme = Theme.of(context);
 
@@ -39,55 +38,53 @@ Widget __input(
 
   return Material(
     type: MaterialType.card,
-    elevation: 2,
-    child: Padding(
-      padding: const EdgeInsets.only(
-        top: 8,
-        bottom: 8,
-        left: 16,
-        right: 16,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-              child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.secondary,
-              borderRadius: BorderRadius.circular(20),
+    elevation: elevation,
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              vertical: 10,
             ),
-            child: Center(
-              child: TextField(
-                keyboardType: TextInputType.multiline,
-                textInputAction: keyBoardAction,
-                maxLines: 5,
-                minLines: 1,
-                controller: controller,
-                decoration: const InputDecoration(
-                  hintText: "Press Ctrl+Enter to insert new lines",
-                  border: InputBorder.none,
-                  isDense: false,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondary,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Center(
+                child: TextField(
+                  keyboardType: TextInputType.multiline,
+                  textInputAction: keyBoardAction,
+                  maxLines: 5,
+                  minLines: 1,
+                  controller: controller,
+                  decoration: const InputDecoration(
+                    hintText: "Press Ctrl+Enter to insert new lines",
+                    border: InputBorder.none,
+                    isDense: false,
+                  ),
+                  onSubmitted: textFieldOnSubmitted,
                 ),
-                onSubmitted: textFieldOnSubmitted,
               ),
             ),
-          )),
-          const SizedBox(width: 8),
-          IconButton(
+          ),
+        ),
+        const SizedBox(width: 4),
+        SizedBox(
+          width: 50,
+          height: 50,
+          child: IconButton(
             padding: const EdgeInsets.all(0),
-            constraints: const BoxConstraints(
-              minWidth: 24,
-              minHeight: 24,
-            ),
             icon: const Icon(
               Icons.arrow_upward,
             ),
             color: theme.colorScheme.primary,
             onPressed: onSubmitted,
           ),
-        ],
-      ),
+        ),
+      ],
     ),
   );
 }
@@ -96,28 +93,48 @@ Widget __input(
 Widget __placeholder(
   BuildContext context,
 ) {
-  return const Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      SizedBox(height: 16),
-      Expanded(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                "Input text below or drop file here to send",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                ),
-              ),
-            ],
+  final theme = Theme.of(context);
+
+  final placeholderBody = Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          "Input text below",
+          style: TextStyle(
+            color: theme.colorScheme.onBackground,
+            fontSize: 20,
           ),
         ),
-      ),
-    ],
+        Text(
+          "or drop file here to send",
+          style: TextStyle(
+            color: theme.colorScheme.onBackground,
+            fontSize: 20,
+          ),
+        ),
+      ],
+    ),
   );
+
+  if (isMobile()) {
+    return placeholderBody;
+  } else {
+    return Container(
+      padding: const EdgeInsets.only(
+        top: 32,
+        left: 32,
+        right: 32,
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: const BorderRadius.all(Radius.circular(15)),
+          color: Colors.grey[100]!.withOpacity(0.7),
+        ),
+        child: placeholderBody,
+      ),
+    );
+  }
 }
 
 class SendDialog extends StatefulHookWidget {
@@ -135,6 +152,41 @@ class SendDialog extends StatefulHookWidget {
 class _SendDialogState extends State<SendDialog> {
   @override
   Widget build(BuildContext context) {
+    if (isMobile()) {
+      return buildMobile(context);
+    } else {
+      return buildDesktop(context);
+    }
+  }
+
+  buildQuickActions(inputController) {
+    final clipboardText = isMobile() ? "Clibboard" : "Copy clipboard";
+    final pictureText = isMobile() ? "Picture" : "Send picture";
+    final fileText = isMobile() ? "File" : "Send file";
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        _QuickAction(
+          title: clipboardText,
+          icon: Icons.content_paste,
+          onTap: () => _onCopyClipboard(inputController),
+        ),
+        _QuickAction(
+          title: pictureText,
+          icon: Icons.image_outlined,
+          onTap: () => _sendImage(context),
+        ),
+        _QuickAction(
+          title: fileText,
+          icon: Icons.description_outlined,
+          onTap: () => _sendFile(context),
+        ),
+      ],
+    );
+  }
+
+  buildMobile(context) {
     final theme = Theme.of(context);
 
     final inputController = TextEditingController();
@@ -143,30 +195,71 @@ class _SendDialogState extends State<SendDialog> {
       Expanded(
         child: renderContent(theme),
       ),
-      Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          const SizedBox(width: 16),
-          _QuickAction(
-            title: "Copy clipboard",
-            onTap: () => _onCopyClipboard(inputController),
-          ),
-          _QuickAction(
-            title: "Send picture",
-            onTap: () => _sendImage(context),
-          ),
-          _QuickAction(
-            title: "Send file",
-            onTap: () => _sendFile(context),
-          ),
-        ],
+      const SizedBox(height: 10),
+      Padding(
+        padding: const EdgeInsets.only(left: 8, right: 8),
+        child: buildQuickActions(inputController),
       ),
-      _Input(
-        isEnterToSend: true,
-        controller: inputController,
-        onSubmit: (msg) {
-          onMessage(context, msg);
-        },
+      const SizedBox(height: 10),
+      Divider(
+        thickness: 1,
+        height: 1,
+        color: Colors.grey[300]!,
+      ),
+      Padding(
+        padding: const EdgeInsets.only(
+          left: 8,
+          right: 4,
+        ),
+        child: _Input(
+          isEnterToSend: true,
+          controller: inputController,
+          onSubmit: (msg) {
+            onMessage(context, msg);
+          },
+        ),
+      ),
+    ]);
+  }
+
+  buildDesktop(context) {
+    final theme = Theme.of(context);
+
+    final inputController = TextEditingController();
+
+    return Column(children: [
+      Expanded(
+        child: renderContent(theme),
+      ),
+      const SizedBox(height: 10),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: buildQuickActions(inputController),
+      ),
+      const SizedBox(height: 10),
+      Padding(
+        padding: const EdgeInsets.only(
+          left: 8,
+          right: 16,
+        ),
+        child: Divider(
+          thickness: 1,
+          height: 1,
+          color: Colors.grey[300]!,
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.only(
+          left: 8,
+          right: 4,
+        ),
+        child: _Input(
+          isEnterToSend: true,
+          controller: inputController,
+          onSubmit: (msg) {
+            onMessage(context, msg);
+          },
+        ),
       ),
     ]);
   }
@@ -285,8 +378,9 @@ class _SendDialogState extends State<SendDialog> {
         });
   }
 
-  renderText(message) {
-    return MessageContainer(
+  renderText(message, ThemeData theme) {
+    return _MessageContainer(
+      backgroundColor: theme.colorScheme.secondary,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -297,7 +391,7 @@ class _SendDialogState extends State<SendDialog> {
             icon: const Icon(
               Icons.copy,
             ),
-            color: Colors.black45,
+            color: theme.colorScheme.primary,
             onPressed: () => copyToClipboardAutoClear(message.text!),
           ),
         ],
@@ -305,10 +399,11 @@ class _SendDialogState extends State<SendDialog> {
     );
   }
 
-  renderImage(message) {
+  renderImage(message, ThemeData theme) {
     return Align(
       alignment: Alignment.centerLeft,
-      child: MessageContainer(
+      child: _MessageContainer(
+        backgroundColor: theme.colorScheme.secondary,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -331,7 +426,7 @@ class _SendDialogState extends State<SendDialog> {
               icon: const Icon(
                 Icons.download,
               ),
-              color: Colors.black45,
+              color: theme.colorScheme.primary,
               onPressed: () => downloadBlobFile(
                 message.fileName!,
                 message.content!,
@@ -343,8 +438,9 @@ class _SendDialogState extends State<SendDialog> {
     );
   }
 
-  renderFile(message, theme) {
-    return MessageContainer(
+  renderFile(message, ThemeData theme) {
+    return _MessageContainer(
+      backgroundColor: theme.colorScheme.secondary,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -353,7 +449,7 @@ class _SendDialogState extends State<SendDialog> {
             radius: 30,
             child: Icon(
               Icons.description_outlined,
-              color: theme.primaryColor,
+              color: theme.colorScheme.tertiary,
               size: 32,
             ),
           ),
@@ -365,7 +461,7 @@ class _SendDialogState extends State<SendDialog> {
             icon: const Icon(
               Icons.download,
             ),
-            color: Colors.black45,
+            color: theme.colorScheme.primary,
             onPressed: () => downloadBlobFile(
               message.fileName!,
               message.content!,
@@ -380,10 +476,10 @@ class _SendDialogState extends State<SendDialog> {
     return messages.map((message) {
       switch (message.type) {
         case MessageType.Text:
-          return renderText(message);
+          return renderText(message, theme);
           break;
         case MessageType.Image:
-          return renderImage(message);
+          return renderImage(message, theme);
           break;
         case MessageType.File:
           return renderFile(message, theme);
@@ -394,7 +490,7 @@ class _SendDialogState extends State<SendDialog> {
 }
 
 @swidget
-Widget messageContainer(
+Widget __messageContainer(
   BuildContext context, {
   required Widget child,
   Color? backgroundColor,
@@ -429,6 +525,7 @@ Widget messageContainer(
 Widget __quickAction(
   BuildContext context, {
   required String title,
+  required IconData icon,
   Function()? onTap,
 }) {
   final theme = Theme.of(context);
@@ -447,14 +544,28 @@ Widget __quickAction(
           ),
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Center(
-          child: Text(
-            title,
-            style: TextStyle(
-              color: theme.colorScheme.primary,
-              fontSize: 19,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              height: 28,
+              width: 18,
+              child: Icon(
+                icon,
+                color: theme.colorScheme.primary,
+                size: 18,
+              ),
             ),
-          ),
+            const SizedBox(width: 3),
+            Text(
+              title,
+              style: TextStyle(
+                color: theme.colorScheme.primary,
+                fontSize: 18,
+              ),
+            ),
+          ],
         ),
       ),
     ),

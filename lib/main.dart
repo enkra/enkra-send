@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import 'pages/send.dart';
 import 'pages/description.dart';
 import 'pages/login.dart';
 import 'models/device_send_manager.dart';
 import 'util.dart';
+import 'theme.dart';
 
 main() async {
   final deviceSendManager = await DeviceSendManager.fromCurrentUrl();
@@ -27,9 +29,18 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Enkra Send',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+      theme: ThemeData.from(
         useMaterial3: true,
+        colorScheme: const ColorScheme.light().copyWith(
+          primary: enkraTheme.primary,
+          secondary: enkraTheme.secondary,
+          onPrimary: enkraTheme.onPrimary,
+          surface: enkraTheme.background,
+          onSurface: enkraTheme.onBackground,
+          background: enkraTheme.background,
+          error: enkraTheme.danger,
+          tertiary: enkraTheme.miscColor,
+        ),
       ),
       home: const MyHomePage(title: 'Enkra Send'),
     );
@@ -48,62 +59,148 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: buildBody(),
-    );
-  }
+    final theme = Theme.of(context);
 
-  buildBody() {
     if (isMobile()) {
-      return buildMobile();
+      return buildMobile(theme);
     } else {
-      return buildDesktop();
+      return buildDesktop(theme);
     }
   }
 
-  buildDesktop() {
-    return Center(
-      child: FractionallySizedBox(
-        widthFactor: 0.6,
-        heightFactor: 0.8,
-        child: Container(
-          decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(10),
-                  topRight: Radius.circular(10),
-                  bottomLeft: Radius.circular(10),
-                  bottomRight: Radius.circular(10)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.5),
-                  spreadRadius: 5,
-                  blurRadius: 7,
-                ),
-              ]),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+  buildMobile(ThemeData theme) {
+    return Consumer<DeviceSendManager>(
+        builder: (context, deviceSendManager, child) {
+      final state = deviceSendManager.currentState();
+
+      if (state is PairedState) {
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(widget.title),
+            backgroundColor: theme.colorScheme.background,
+            surfaceTintColor: theme.colorScheme.background,
+          ),
+          body: Column(
             children: [
-              Expanded(
-                child: buildLeftWidget(),
+              Divider(
+                thickness: 1,
+                height: 1,
+                color: Colors.grey[300]!,
               ),
-              const Expanded(
-                child: Center(
-                  child: Description(),
+              Expanded(child: buildLeftWidget()),
+            ],
+          ),
+        );
+      } else {
+        return Stack(
+          children: [
+            Opacity(
+              opacity: 0.5,
+              child: SvgPicture.asset(
+                'assets/background.svg',
+                semanticsLabel: 'Enkra Send background',
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+              ),
+            ),
+            Scaffold(
+              appBar: AppBar(
+                title: Text(widget.title),
+                backgroundColor: Colors.transparent,
+                surfaceTintColor: Colors.transparent,
+              ),
+              backgroundColor: Colors.transparent,
+              body: buildLeftWidget(),
+            ),
+          ],
+        );
+      }
+    });
+  }
+
+  buildDesktop(theme) {
+    return CustomScrollView(
+      slivers: [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Stack(
+            children: [
+              Container(
+                child: SvgPicture.asset(
+                  'assets/background.svg',
+                  semanticsLabel: 'Enkra Send background',
+                  fit: BoxFit.fill,
+                  width: double.infinity,
+                  height: double.infinity,
                 ),
+              ),
+              Scaffold(
+                backgroundColor: Colors.transparent,
+                appBar: AppBar(
+                  title: Text(widget.title),
+                  backgroundColor: Colors.transparent,
+                  surfaceTintColor: Colors.transparent,
+                  elevation: 0,
+                ),
+                body: buildDesktopBody(theme),
               ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 
-  buildMobile() {
-    return buildLeftWidget();
+  buildDesktopBody(ThemeData theme) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Spacer(flex: 1),
+          Container(
+            width: 1024,
+            height: 650,
+            decoration: BoxDecoration(
+                color: theme.colorScheme.background,
+                border: Border.all(color: Colors.grey[200]!),
+                borderRadius: const BorderRadius.all(Radius.circular(15)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey[300]!,
+                    offset: const Offset(
+                      5.0,
+                      5.0,
+                    ),
+                    blurRadius: 18.0,
+                    spreadRadius: 0.0,
+                  ),
+                ]),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: buildLeftWidget(),
+                ),
+                VerticalDivider(
+                  thickness: 1,
+                  width: 1,
+                  indent: 60,
+                  endIndent: 60,
+                  color: theme.primaryColor,
+                ),
+                const Expanded(
+                  child: Center(
+                    child: Description(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(flex: 2),
+        ],
+      ),
+    );
   }
 
   buildLeftWidget() {
