@@ -66,35 +66,37 @@ class _MyHomePageState extends State<MyHomePage> {
 
   buildDesktop() {
     return Center(
-      child: Container(
-        width: 1080,
-        height: 720,
-        decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(10),
-                topRight: Radius.circular(10),
-                bottomLeft: Radius.circular(10),
-                bottomRight: Radius.circular(10)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.5),
-                spreadRadius: 5,
-                blurRadius: 7,
+      child: FractionallySizedBox(
+        widthFactor: 0.6,
+        heightFactor: 0.8,
+        child: Container(
+          decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(10),
+                  topRight: Radius.circular(10),
+                  bottomLeft: Radius.circular(10),
+                  bottomRight: Radius.circular(10)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.5),
+                  spreadRadius: 5,
+                  blurRadius: 7,
+                ),
+              ]),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Expanded(
+                child: buildLeftWidget(),
               ),
-            ]),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Expanded(
-              child: buildLeftWidget(),
-            ),
-            const Expanded(
-              child: Center(
-                child: Description(),
+              const Expanded(
+                child: Center(
+                  child: Description(),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
