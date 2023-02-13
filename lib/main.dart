@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'pages/send.dart';
 import 'pages/description.dart';
 import 'pages/login.dart';
+import 'components/app_title.dart';
 import 'models/device_send_manager.dart';
 import 'util.dart';
 import 'theme.dart';
@@ -78,7 +78,7 @@ class _MyHomePageState extends State<MyHomePage> {
       if (state is PairedState) {
         return Scaffold(
           appBar: AppBar(
-            title: Text(widget.title),
+            title: AppTitle(title: widget.title),
             backgroundColor: theme.colorScheme.background,
             surfaceTintColor: theme.colorScheme.background,
           ),
@@ -108,7 +108,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             Scaffold(
               appBar: AppBar(
-                title: Text(widget.title),
+                title: AppTitle(title: widget.title),
                 backgroundColor: Colors.transparent,
                 surfaceTintColor: Colors.transparent,
               ),
@@ -140,7 +140,7 @@ class _MyHomePageState extends State<MyHomePage> {
               Scaffold(
                 backgroundColor: Colors.transparent,
                 appBar: AppBar(
-                  title: Text(widget.title),
+                  title: AppTitle(title: widget.title),
                   backgroundColor: Colors.transparent,
                   surfaceTintColor: Colors.transparent,
                   elevation: 0,
