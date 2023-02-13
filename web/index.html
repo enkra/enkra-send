@@ -38,8 +38,21 @@
   </script>
   <!-- This script adds the flutter initialization JS code -->
   <script src="flutter.js" defer></script>
+  <style>
+   #loading {
+     height: 5em;
+
+     position: fixed;
+     top: 50%;
+     left: 50%;
+     transform: translate(-50%, -50%);
+
+     visibility:hidden;
+   }
+  </style>
 </head>
 <body>
+  <img id="loading" src="assets/assets/loading.svg"></div>
   <script>
     window.flutterConfiguration = {
         canvasKitBaseUrl: "./canvaskit/"
@@ -52,6 +65,12 @@
       document.body.append(scriptTag);
     }
 
+    var loading = document.querySelector('#loading');
+
+    setTimeout(function()  {
+      loading.style.visibility = "visible";
+    }, 600);
+
     window.addEventListener('load', function(ev) {
       // Download main.dart.js
       _flutter.loader.loadEntrypoint({
@@ -63,6 +82,8 @@
       }).then(function(appRunner) {
         return appRunner.runApp();
       }).then(function() {
+        loading.remove();
+
         _loadScript("https://cdn.jsdelivr.net/npm/jsqr@1.3.1/dist/jsQR.min.js");
       });
     });
