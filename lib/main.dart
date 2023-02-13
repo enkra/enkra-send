@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       color: enkraTheme.secondary,
-      title: 'Enkra Send',
+      title: 'Enkra Send: Secure File Transfer with End-to-End Encryption',
       theme: ThemeData.from(
         useMaterial3: true,
         colorScheme: const ColorScheme.light().copyWith(
