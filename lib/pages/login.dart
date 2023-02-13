@@ -2,11 +2,11 @@ import 'package:enkra_send/util.dart';
 import 'package:flutter/material.dart';
 import 'package:functional_widget_annotation/functional_widget_annotation.dart';
 import 'package:pretty_qr_code/pretty_qr_code.dart';
-import 'package:simple_barcode_scanner/enum.dart';
-import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
 import 'package:provider/provider.dart';
 
 import '../models/device_send_manager.dart';
+
+import 'qr_code_scanner.dart';
 
 part 'login.g.dart';
 
@@ -177,13 +177,10 @@ Widget scanToPair(
                     width: 320,
                     child: OutlinedButton(
                       onPressed: () async {
-                        var res = await Navigator.push(
+                        final res = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>
-                                const SimpleBarcodeScannerPage(
-                              scanType: ScanType.qr,
-                            ),
+                            builder: (context) => const QrCodeScanner(),
                           ),
                         );
 
@@ -191,9 +188,7 @@ Widget scanToPair(
                             Provider.of<DeviceSendManager>(context,
                                 listen: false);
 
-                        if (res is String) {
-                          deviceSendManager.pairTo(res);
-                        }
+                        deviceSendManager.pairTo(res);
                       },
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(color: theme.colorScheme.tertiary),
