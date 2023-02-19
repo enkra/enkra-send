@@ -17,7 +17,7 @@ class DeviceSendManager extends ChangeNotifier {
 
     final state = keys == null
         ? await WaitToPairState.create()
-        : WaitToPairState.connect(keys!);
+        : await WaitToPairState.connect(keys!);
 
     return DeviceSendManager._internal(state);
   }
@@ -31,9 +31,12 @@ class DeviceSendManager extends ChangeNotifier {
   pairTo(String url) async {
     final keys = DeviceSendManager._extractSessionKeyFromUrl(Uri.parse(url));
 
+    // dispose old state
+    _state.dispose();
+
     _state = keys == null
         ? await WaitToPairState.create()
-        : WaitToPairState.connect(keys!);
+        : await WaitToPairState.connect(keys!);
 
     (_state as WaitToPairState).setOnPaired(_handlePaired);
 
@@ -59,13 +62,15 @@ class DeviceSendManager extends ChangeNotifier {
     }
   }
 
-  _handlePaired() {
+  _handlePaired(aeadCipher) {
     final oldState = _state as WaitToPairState;
 
     _state = PairedState(
       oldState.wsChannel,
-      oldState.cipherKey,
+      aeadCipher,
     );
+
+    oldState.dispose();
 
     notifyListeners();
   }
@@ -78,4 +83,3 @@ class DeviceSendManager extends ChangeNotifier {
     return _state as T;
   }
 }
-

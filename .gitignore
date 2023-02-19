@@ -44,3 +44,7 @@ app.*.map.json
 /android/app/release
 
 *.g.dart
+
+target
+native/src/bridge_generated.rs
+lib/native/bridge_generated*

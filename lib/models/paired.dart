@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:cryptography/cryptography.dart';
+import 'package:enkra_send/native/bridge_generated.dart';
 
 import 'app_state.dart';
 import 'ws_client.dart';
@@ -88,11 +88,9 @@ class PairedState extends AppState {
 
   final List<Message> _messages = [];
 
-  final String _cipherKey;
+  final AeadCipher _aeadCipher;
 
-  final AesGcm aes = AesGcm.with128bits();
-
-  PairedState(this._channel, this._cipherKey) {
+  PairedState(this._channel, this._aeadCipher) {
     _listenChannel(_channel);
   }
 
@@ -123,7 +121,13 @@ class PairedState extends AppState {
 
   _sendMessage(Message msg) async {
     final content = await _encryptContent(msg.toJson());
-    _channel.sink.add(content);
+    final message = jsonEncode({
+      "event": "message",
+      "content": content,
+    });
+    _channel.sink.add(message);
+
+    _addNewMessage(msg);
   }
 
   _listenChannel(channel) {
@@ -139,36 +143,35 @@ class PairedState extends AppState {
       final message = Message.fromJson(content);
 
       if (message != null) {
-        _messages.add(message);
-        notifyListeners();
+        _addNewMessage(message);
       }
     });
   }
 
-  _encryptContent(plaintext) async {
-    final secretKey = SecretKey(base64Url.decode(_cipherKey));
-
-    final nonce = aes.newNonce();
-
-    final secretBox = await aes.encrypt(
-      utf8.encode(plaintext),
-      secretKey: secretKey,
-      nonce: nonce,
-    );
-
-    return base64Url.encode(secretBox.concatenation());
+  _addNewMessage(Message msg) {
+    _messages.add(msg);
+    notifyListeners();
   }
 
-  _decryptContent(ciphertext) async {
-    final secretKey = SecretKey(base64Url.decode(_cipherKey));
-
-    final secretBox = SecretBox.fromConcatenation(
-      base64Url.decode(ciphertext),
-      nonceLength: 12,
-      macLength: 16,
+  _encryptContent(String plaintext) async {
+    final ciphertext = await _aeadCipher.encrypt(
+      pt: Uint8List.fromList(utf8.encode(plaintext)),
+      aad: Uint8List.fromList(utf8.encode("")),
     );
 
-    final plaintext = await aes.decrypt(secretBox, secretKey: secretKey);
+    return base64Url.encode(ciphertext);
+  }
+
+  _decryptContent(String ciphertext) async {
+    final plaintext = await _aeadCipher.decrypt(
+      ct: base64Url.decode(ciphertext),
+      aad: Uint8List.fromList(utf8.encode("")),
+    );
+
     return utf8.decode(plaintext);
+  }
+
+  void dispose() {
+    _aeadCipher.inner.dispose();
   }
 }
