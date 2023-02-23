@@ -1,21 +1,19 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:nanoid/nanoid.dart';
 
 import 'app_state.dart';
 import 'ws_client.dart';
+import 'api.dart';
 
 import '../native/native.dart';
 
-const String WS_API_URL = String.fromEnvironment('WS_API_URL');
 const String ENKRA_SEND_APP_URL = String.fromEnvironment('SEND_APP_URL');
 
 class WaitToPairState extends AppState {
   final WsClient _channel;
-
-  final String _sessionKey;
+  final String _channelId;
+  final String _deviceToken;
 
   final SecureChannelCipher _cipher;
 
@@ -26,10 +24,11 @@ class WaitToPairState extends AppState {
 
   WaitToPairState._internal(
     WebSocketChannel channel,
-    this._sessionKey,
+    this._channelId,
     this._cipher,
     this._isSender,
     this._senderAeadCipher,
+    this._deviceToken,
   ) : _channel = WsClient(channel) {
     if (_isSender) {
       _senderListen(_channel);
@@ -39,51 +38,62 @@ class WaitToPairState extends AppState {
   }
 
   static create() async {
-    final sessionKey = nanoid();
-    final wsUrl = Uri.parse('$WS_API_URL/$sessionKey');
-    final channel = WebSocketChannel.connect(wsUrl);
+    final result = await Future.wait([
+      requestChannel(),
+      SecureChannelCipher.newRandom(bridge: api),
+    ]);
 
-    final channelCipher = await SecureChannelCipher.newRandom(bridge: api);
+    final requestChannelResult = result[0];
+    final channelCipher = result[1];
+
+    final channelId = requestChannelResult["channelId"]!;
+    final deviceToken = requestChannelResult["hostToken"]!;
+
+    final wsChannelUrl = Uri.parse('$wsUrl/$channelId/$deviceToken');
+    final channel = WebSocketChannel.connect(wsChannelUrl);
 
     return WaitToPairState._internal(
       channel,
-      sessionKey,
+      channelId,
       channelCipher,
       false,
       null,
+      deviceToken,
     );
   }
 
-  static connect(List<String> keys) async {
-    final sessionKey = keys[0];
-    final publicKey = base64Url.decode(keys[1]);
+  static connect(List<String> tokens) async {
+    final channelId = tokens[0];
+    final publicKey = base64Url.decode(tokens[1]);
 
     final channelCipher = await SecureChannelCipher.newRandom(bridge: api);
     final encapKeys = await channelCipher.encapKey(public: publicKey);
 
-    final wsUrl = Uri.parse('$WS_API_URL/$sessionKey');
-    final channel = WebSocketChannel.connect(wsUrl);
+    final deviceToken = await joinChannel(
+        channelId, base64Url.encode(encapKeys.encapsulatedKey));
 
-    _sendPairingMessage(encapKeys.encapsulatedKey, channel);
+    final wsChannelUrl = Uri.parse('$wsUrl/$channelId/$deviceToken');
+    final channel = WebSocketChannel.connect(wsChannelUrl);
 
     return WaitToPairState._internal(
       channel,
-      sessionKey,
+      channelId,
       channelCipher,
       true,
       encapKeys.sharedSecret,
+      deviceToken,
     );
   }
 
   String sesssionKey() {
-    return _sessionKey;
+    return _channelId;
   }
 
   Future<String> pairingUrl() async {
     final key = await _cipher.public();
     final publicKey = base64Url.encode(key);
 
-    return '$ENKRA_SEND_APP_URL/#/$_sessionKey/$publicKey';
+    return '$ENKRA_SEND_APP_URL/#/$_channelId/$publicKey';
   }
 
   _receiverListen(channel) async {
@@ -102,9 +112,7 @@ class WaitToPairState extends AppState {
         final cipherKey =
             await _cipher.sharedSecret(encapsulatedKey: encappedKey);
 
-        _channel.sink.add(jsonEncode({
-          "event": "paired",
-        }));
+        final result = await approvePairing(_channelId, _deviceToken);
 
         _onPaired?.call(cipherKey);
       }
@@ -125,19 +133,11 @@ class WaitToPairState extends AppState {
     });
   }
 
-  static _sendPairingMessage(encappedKey, wsChannel) async {
-    final msg = jsonEncode({
-      "event": "pairing",
-      "encappedKey": base64Url.encode(encappedKey),
-    });
-
-    wsChannel.sink.add(msg);
-  }
-
   setOnPaired(Function(AeadCipher) onPaired) {
     _onPaired = onPaired;
   }
 
+  @override
   void dispose() {
     _cipher.key.dispose();
     _cipher.csprng.dispose();

@@ -121,11 +121,8 @@ class PairedState extends AppState {
 
   _sendMessage(Message msg) async {
     final content = await _encryptContent(msg.toJson());
-    final message = jsonEncode({
-      "event": "message",
-      "content": content,
-    });
-    _channel.sink.add(message);
+
+    _channel.sink.add(content);
 
     _addNewMessage(msg);
   }
