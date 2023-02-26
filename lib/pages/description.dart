@@ -43,7 +43,7 @@ Widget description(
         ),
         const SizedBox(height: 10),
         const Text(
-          "Our end-to-end encryption technology ensures that your files are protected from prying eyes during transfer. Enkra Send guarantees that your data stays in the right hands.",
+          "Our E2EE(end-to-end encryption) technology ensures that your files are protected from prying eyes during transfer. Enkra Send guarantees that your data stays in the right hands.",
           style: TextStyle(
             fontSize: 17,
           ),
