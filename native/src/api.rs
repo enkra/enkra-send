@@ -1,6 +1,6 @@
 use std::ops::DerefMut;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use flutter_rust_bridge::RustOpaque;
 use hpke::{
     aead::ExportOnlyAead, kdf::HkdfSha256, kem::X25519HkdfSha256, Deserializable, Kem, OpModeR,
@@ -79,12 +79,35 @@ impl SecureChannelCipher {
     }
 
     pub fn public(&self) -> Vec<u8> {
-        self.key.public_key.to_bytes().to_vec()
+        // 16 bit prefix for public key version
+        // 0 indicate:
+        //   * X25519HkdfSha256/HkdfSha256 HPKE export secret +
+        //   * XChaCha20Poly1305 aead
+        let prefix: u16 = 0;
+
+        let public_key = self.key.public_key.to_bytes().to_vec();
+
+        let mut key = Vec::with_capacity(2 + public_key.len());
+
+        key.extend_from_slice(&prefix.to_be_bytes());
+        key.extend_from_slice(&public_key);
+
+        key
+    }
+
+    fn read_public_key(&self, public: Vec<u8>) -> Result<<X25519HkdfSha256 as Kem>::PublicKey> {
+        let prefix = u16::from_be_bytes([public[0], public[1]]);
+
+        if prefix != 0 {
+            bail!("Unsupport public version {}", prefix);
+        }
+
+        <X25519HkdfSha256 as Kem>::PublicKey::from_bytes(&public[2..])
+            .map_err(|e| anyhow!("invalid public key {}", e))
     }
 
     pub fn encap_key(&self, public: Vec<u8>) -> Result<EncappedKey> {
-        let public_key = <X25519HkdfSha256 as Kem>::PublicKey::from_bytes(&public)
-            .map_err(|e| anyhow!("invalid public key {}", e))?;
+        let public_key = self.read_public_key(public)?;
 
         let (encapsulated_key, encryption_context) = {
             let mut csprng = self
