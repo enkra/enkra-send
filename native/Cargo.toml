@@ -8,7 +8,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 anyhow = "1.0.69"
-flutter_rust_bridge = "1.64.0"
+flutter_rust_bridge = { version = "1.69.0", default-features = false, features = ["wasm-start"] }
 getrandom = { version = "0.2.8", features = ["js"] }
 hpke = { version = "0.10.0", default-features = false, features = ["alloc", "x25519"] }
 rand = "0.8.5"
@@ -16,7 +16,7 @@ tink-aead = "0.2.4"
 tink-core = "0.2.4"
 
 [build-dependencies]
-flutter_rust_bridge_codegen = "1.63.1"
+flutter_rust_bridge_codegen = "1.69.0"
 
 [patch.crates-io]
 tink-core = { git = "https://github.com/enkra/tink-rust.git", rev= "3a87ad2" }
