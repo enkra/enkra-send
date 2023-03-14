@@ -49,18 +49,11 @@ Widget waitToPair(
         ),
       ),
       const Spacer(flex: 2),
-      FutureBuilder<String>(
-          future: waitToPairState.pairingUrl(),
-          builder: (_, snapshot) {
-            if (snapshot.hasData) {
-              return _SendQr(
-                size: 150,
-                data: snapshot.data!,
-                color: theme.colorScheme.background,
-              );
-            }
-            return Container();
-          }),
+      _SendQr(
+        size: 150,
+        data: waitToPairState.pairingUrl(),
+        color: theme.colorScheme.background,
+      ),
       const SizedBox(height: 30),
       Text(
         "Scan to pair devices",
@@ -163,18 +156,11 @@ Widget scanToPair(
               ),
               child: Column(
                 children: [
-                  FutureBuilder<String>(
-                      future: waitToPairState.pairingUrl(),
-                      builder: (_, snapshot) {
-                        if (snapshot.hasData) {
-                          return _SendQr(
-                            size: 130,
-                            data: snapshot.data!,
-                            color: theme.colorScheme.background,
-                          );
-                        }
-                        return Container();
-                      }),
+                  _SendQr(
+                    size: 130,
+                    data: waitToPairState.pairingUrl(),
+                    color: theme.colorScheme.background,
+                  ),
                   const Spacer(),
                   Text(
                     "Scan QR code to pair this device",
@@ -265,7 +251,7 @@ Widget scanToPair(
 @swidget
 Widget __sendQr(
   BuildContext context, {
-  required String data,
+  required Future<String> data,
   required double size,
   Color color = Colors.white,
 }) {
@@ -280,11 +266,26 @@ Widget __sendQr(
       color: color,
     ),
     padding: const EdgeInsets.all(15),
-    child: PrettyQr(
-      size: size,
-      data: data,
-      roundEdges: true,
-    ),
+    child: FutureBuilder<String>(
+        future: data,
+        builder: (_, snapshot) {
+          if (snapshot.hasData) {
+            return PrettyQr(
+              size: size,
+              data: snapshot.data!,
+              roundEdges: true,
+            );
+          } else {
+            return Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.all(Radius.circular(10)),
+                color: theme.colorScheme.secondary,
+              ),
+            );
+          }
+        }),
   );
 }
 

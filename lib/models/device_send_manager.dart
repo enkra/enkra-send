@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:html' as html;
 
 import 'package:flutter/foundation.dart';
@@ -12,12 +13,19 @@ export 'paired.dart';
 class DeviceSendManager extends ChangeNotifier {
   AppState _state;
 
-  static fromCurrentUrl() async {
+  static fromCurrentUrl() {
     final keys = DeviceSendManager._extractSessionKeyFromCurrentUrl();
 
-    final state = keys == null
-        ? await WaitToPairState.create()
-        : await WaitToPairState.connect(keys!);
+    WaitToPairState state;
+
+    if (keys == null) {
+      state = WaitToPairState.host();
+    } else {
+      final channelId = keys[0];
+      final publicKey = base64Url.decode(keys[1]);
+
+      state = WaitToPairState.guest(channelId, publicKey);
+    }
 
     return DeviceSendManager._internal(state);
   }
@@ -28,15 +36,20 @@ class DeviceSendManager extends ChangeNotifier {
     }
   }
 
-  pairTo(String url) async {
+  pairTo(String url) {
     final keys = DeviceSendManager._extractSessionKeyFromUrl(Uri.parse(url));
 
     // dispose old state
     _state.dispose();
 
-    _state = keys == null
-        ? await WaitToPairState.create()
-        : await WaitToPairState.connect(keys!);
+    if (keys == null) {
+      _state = WaitToPairState.host();
+    } else {
+      final channelId = keys[0];
+      final publicKey = base64Url.decode(keys[1]);
+
+      _state = WaitToPairState.guest(channelId, publicKey);
+    }
 
     (_state as WaitToPairState).setOnPaired(_handlePaired);
 
