@@ -115,6 +115,9 @@
         loading.remove();
 
         _loadScript("https://cdn.jsdelivr.net/npm/jsqr@1.3.1/dist/jsQR.min.js");
+
+        // prefetch resources
+        fetch("/native/native_bg.wasm");
       });
     });
 
