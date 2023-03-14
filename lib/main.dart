@@ -11,7 +11,7 @@ import 'util.dart';
 import 'theme.dart';
 
 main() async {
-  final deviceSendManager = await DeviceSendManager.fromCurrentUrl();
+  final deviceSendManager = DeviceSendManager.fromCurrentUrl();
 
   runApp(
     ChangeNotifierProvider<DeviceSendManager>(
