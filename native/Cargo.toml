@@ -12,12 +12,8 @@ flutter_rust_bridge = { version = "1.69.0", default-features = false, features =
 getrandom = { version = "0.2.8", features = ["js"] }
 hpke = { version = "0.10.0", default-features = false, features = ["alloc", "x25519"] }
 rand = "0.8.5"
-tink-aead = "0.2.4"
-tink-core = "0.2.4"
+tink-aead = "0.2.5"
+tink-core = "0.2.5"
 
 [build-dependencies]
 flutter_rust_bridge_codegen = "1.69.0"
-
-[patch.crates-io]
-tink-core = { git = "https://github.com/enkra/tink-rust.git", rev= "3a87ad2" }
-tink-aead = { git = "https://github.com/enkra/tink-rust.git", rev= "3a87ad2" }
