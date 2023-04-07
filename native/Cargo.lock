@@ -1494,7 +1494,8 @@ dependencies = [
 [[package]]
 name = "tink-aead"
 version = "0.2.5"
-source = "git+https://github.com/enkra/tink-rust.git?rev=3a87ad2#3a87ad2e6f0f4ef469bf527072043b9b2f11408b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffa26235f43ba5ad6c9116ab0b5e04a9a142821a79314856d57744c5611603e9"
 dependencies = [
  "aead",
  "aes 0.8.2",
@@ -1511,7 +1512,8 @@ dependencies = [
 [[package]]
 name = "tink-core"
 version = "0.2.5"
-source = "git+https://github.com/enkra/tink-rust.git?rev=3a87ad2#3a87ad2e6f0f4ef469bf527072043b9b2f11408b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd86481201606873b66c95c29a9cf39df2503d3c65f9742e64c6138b54e8f262"
 dependencies = [
  "digest 0.10.6",
  "hkdf 0.12.3",
