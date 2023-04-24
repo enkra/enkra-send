@@ -66,23 +66,24 @@ Widget description(
               fontSize: 17,
             ),
             children: [
-              const TextSpan(text: "Source code is avaliable on "),
+              const TextSpan(text: "Source code is available on "),
               TextSpan(
                 text: "Github",
                 style: TextStyle(
                   color: theme.colorScheme.primary,
                 ),
                 recognizer: TapGestureRecognizer()
-                ..onTap = () async {
-                  const url = 'https://github.com/enkra/enkra-send';
-                  if (await canLaunch(url)) {
-                    await launch(url);
-                  } else {
-                    throw 'Could not launch $url';
-                  }
-                },
+                  ..onTap = () async {
+                    const url = 'https://github.com/enkra/enkra-send';
+                    if (await canLaunch(url)) {
+                      await launch(url);
+                    } else {
+                      throw 'Could not launch $url';
+                    }
+                  },
               ),
-              const TextSpan(text: ". Feel free to review and verify our E2EE claims."),
+              const TextSpan(
+                  text: ". Feel free to review and verify our E2EE claims."),
             ],
           ),
         ),
