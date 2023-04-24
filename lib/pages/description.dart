@@ -66,7 +66,7 @@ Widget description(
               fontSize: 17,
             ),
             children: [
-              const TextSpan(text: "Source code is avaliable on "),
+              const TextSpan(text: "Source code is available on "),
               TextSpan(
                 text: "Github",
                 style: TextStyle(
