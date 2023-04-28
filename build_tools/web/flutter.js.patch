@@ -1,14 +1,27 @@
---- build/web/flutter.js.orig	2023-03-01 15:40:58.588065610 +0800
-+++ build/web/flutter.js	2023-03-01 15:43:48.879605009 +0800
-@@ -375,7 +375,16 @@
+--- build/web/flutter.js.orig	2023-05-04 16:50:40.988164867 +0800
++++ build/web/flutter.js	2023-05-04 16:50:58.344698407 +0800
+@@ -375,7 +375,29 @@
        // Install the `didCreateEngineInitializer` listener where Flutter web expects it to be.
        this.didCreateEngineInitializer =
          entrypointLoader.didCreateEngineInitializer.bind(entrypointLoader);
 -      return entrypointLoader.loadEntrypoint(entrypoint);
 +      const main = entrypointLoader.loadEntrypoint(entrypoint);
 +
-+      fetch("canvaskit/canvaskit.js");
-+      fetch("canvaskit/canvaskit.wasm");
++      const isMobile = /Mobi/i.test(window.navigator.userAgent);
++      const isChromium = window.navigator.userAgent
++                               .toLowerCase()
++                               .indexOf('chrome') > -1;
++
++      if (!isMobile) {
++        if (isChromium) {
++          fetch("canvaskit/chromium/canvaskit.js");
++          fetch("canvaskit/chromium/canvaskit.wasm");
++        } else {
++          fetch("canvaskit/canvaskit.js");
++          fetch("canvaskit/canvaskit.wasm");
++        }
++      }
++
 +      fetch("assets/FontManifest.json");
 +      fetch("assets/fonts/MaterialIcons-Regular.otf");
 +      fetch("assets/packages/cupertino_icons/assets/CupertinoIcons.ttf");
