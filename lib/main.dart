@@ -96,6 +96,11 @@ class _MyHomePageState extends State<MyHomePage> {
       } else {
         return Stack(
           children: [
+            Container(
+              color: theme.colorScheme.background,
+              width: double.infinity,
+              height: double.infinity,
+            ),
             Opacity(
               opacity: 0.5,
               child: SvgPicture.asset(
