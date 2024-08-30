@@ -1,7 +1,6 @@
 use std::ops::DerefMut;
 
 use anyhow::{anyhow, bail, Result};
-use flutter_rust_bridge::RustOpaque;
 use hpke::{
     aead::ExportOnlyAead, kdf::HkdfSha256, kem::X25519HkdfSha256, Deserializable, Kem, OpModeR,
     OpModeS, Serializable,
@@ -12,6 +11,8 @@ use tink_core::Aead;
 pub use rand::rngs::StdRng;
 pub use std::sync::Mutex;
 pub use tink_aead::subtle::XChaCha20Poly1305;
+
+use crate::frb_generated::RustOpaque;
 
 pub struct EnkraSecureChannelKey {
     private_key: <X25519HkdfSha256 as Kem>::PrivateKey,

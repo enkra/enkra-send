@@ -6,8 +6,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'app_state.dart';
 import 'ws_client.dart';
 import 'api.dart';
-
-import '../native/native.dart';
+import '../src/rust/api/crypto.dart';
 
 const String ENKRA_SEND_APP_URL = String.fromEnvironment('SEND_APP_URL');
 
@@ -29,7 +28,7 @@ class WaitToPairState extends AppState {
   }
 
   initCipher() {
-    return SecureChannelCipher.newRandom(bridge: api);
+    return SecureChannelCipher.newRandom();
   }
 
   _initHost() async {

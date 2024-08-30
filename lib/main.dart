@@ -10,7 +10,11 @@ import 'models/device_send_manager.dart';
 import 'util.dart';
 import 'theme.dart';
 
+import './src/rust/frb_generated.dart';
+
 main() async {
+  await RustLib.init();
+
   final deviceSendManager = DeviceSendManager.fromCurrentUrl();
 
   runApp(

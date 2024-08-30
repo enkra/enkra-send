@@ -1,19 +1,16 @@
 [package]
-name = "native"
+name = "rust_lib_enkra_send"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 anyhow = "1.0.69"
-flutter_rust_bridge = { version = "~1.69.0", default-features = false, features = ["wasm-start"] }
+flutter_rust_bridge = "=2.3.0"
 getrandom = { version = "0.2.8", features = ["js"] }
 hpke = { version = "0.10.0", default-features = false, features = ["alloc", "x25519"] }
 rand = "0.8.5"
 tink-aead = "0.2.5"
 tink-core = "0.2.5"
-
-[build-dependencies]
-flutter_rust_bridge_codegen = "~1.69.0"

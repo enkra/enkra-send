@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:enkra_send/native/bridge_generated.dart';
-
 import 'app_state.dart';
 import 'ws_client.dart';
+import '../src/rust/api/crypto.dart';
 
 enum MessageType {
   Text,
