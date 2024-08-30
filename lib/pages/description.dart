@@ -73,16 +73,18 @@ Widget description(
                   color: theme.colorScheme.primary,
                 ),
                 recognizer: TapGestureRecognizer()
-                ..onTap = () async {
-                  const url = 'https://github.com/enkra/enkra-send';
-                  if (await canLaunch(url)) {
-                    await launch(url);
-                  } else {
-                    throw 'Could not launch $url';
-                  }
-                },
+                  ..onTap = () async {
+                    const url = 'https://github.com/enkra/enkra-send';
+                    if (await canLaunch(url)) {
+                      await launch(url);
+                    } else {
+                      throw 'Could not launch $url';
+                    }
+                  },
               ),
-              const TextSpan(text: ". Feel free to review and verify our E2EE claims."),
+              const TextSpan(
+                text: ". Feel free to review and verify our E2EE claims.",
+              ),
             ],
           ),
         ),
