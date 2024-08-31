@@ -11,56 +11,70 @@ import '../src/rust/api/crypto.dart';
 const String ENKRA_SEND_APP_URL = String.fromEnvironment('SEND_APP_URL');
 
 class WaitToPairState extends AppState {
-  Future<bool>? _isInitliazed;
-
   WsClient? _wsChannel;
-  String? _channelId;
+  String? channelId;
   String? _deviceToken;
 
-  Future<SecureChannelCipher>? _cipher;
+  SecureChannelCipher? _cipher;
+
+  Future<bool>? isInitialized;
 
   Function(AeadCipher)? _onPaired;
 
-  WaitToPairState.host() {
-    _cipher = initCipher();
+  WaitToPairState._create();
 
-    _isInitliazed = _initHost();
+  static host() {
+    final state = WaitToPairState._create();
+
+    state.isInitialized = state._initHost();
+
+    return state;
   }
 
   initCipher() {
     return SecureChannelCipher.newRandom();
   }
 
-  _initHost() async {
+  Future<bool> _initHost() async {
+    final cipher = initCipher();
     final requestChannelResult = await requestChannel();
 
-    _channelId = requestChannelResult["channelId"]!;
+    channelId = requestChannelResult["channelId"]!;
     _deviceToken = requestChannelResult["hostToken"]!;
 
-    _wsChannel = _buildWsClient(_channelId, _deviceToken);
+    _wsChannel = _buildWsClient(channelId, _deviceToken);
 
     _hostListen(_wsChannel);
+
+    _cipher = await cipher;
 
     return true;
   }
 
-  WaitToPairState.guest(
-    this._channelId,
+  static guest(
+    channelId,
     Uint8List publicKey,
   ) {
-    _cipher = initCipher();
+    final state = WaitToPairState._create();
 
-    _isInitliazed = _initGuest(_channelId, publicKey);
+    state.isInitialized = state._initGuest(channelId, publicKey);
+
+    return state;
   }
 
   _initGuest(channelId, publicKey) async {
-    final cipher = await _cipher!;
+    this.channelId = channelId;
+
+    _cipher = await initCipher();
+
+    final cipher = _cipher!;
+
     final encapKeys = await cipher.encapKey(public: publicKey);
 
     _deviceToken = await joinChannel(
         channelId, base64Url.encode(encapKeys.encapsulatedKey));
 
-    _wsChannel = _buildWsClient(_channelId, _deviceToken);
+    _wsChannel = _buildWsClient(channelId, _deviceToken);
     _guestListen(_wsChannel, encapKeys.sharedSecret);
 
     return true;
@@ -72,18 +86,18 @@ class WaitToPairState extends AppState {
   }
 
   String sesssionKey() {
-    return _channelId!;
+    return channelId!;
   }
 
   Future<String> pairingUrl() async {
-    await _isInitliazed;
+    await isInitialized;
 
-    final cipher = await _cipher!;
+    final cipher = _cipher!;
 
     final key = await cipher.public();
     final publicKey = base64Url.encode(key);
 
-    return '$ENKRA_SEND_APP_URL/#/$_channelId/$publicKey';
+    return '$ENKRA_SEND_APP_URL/#/$channelId/$publicKey';
   }
 
   _hostListen(channel) async {
@@ -99,11 +113,11 @@ class WaitToPairState extends AppState {
 
         final encappedKey = base64Url.decode(key);
 
-        final cipher = await _cipher!;
+        final cipher = _cipher!;
         final aeadCipher =
             await cipher.sharedSecret(encapsulatedKey: encappedKey);
 
-        final result = await approvePairing(_channelId, _deviceToken);
+        await approvePairing(channelId, _deviceToken);
 
         _onPaired?.call(aeadCipher);
       }
@@ -126,8 +140,10 @@ class WaitToPairState extends AppState {
 
   @override
   void dispose() async {
+    super.dispose();
+
     if (_cipher != null) {
-      final cipher = await _cipher!;
+      final cipher = _cipher!;
 
       cipher.key.dispose();
       cipher.csprng.dispose();
