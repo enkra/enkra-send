@@ -49,9 +49,9 @@ Widget waitToPair(
         ),
       ),
       const Spacer(flex: 2),
-      _SendQr(
+      _WaitToPairQrPanel(
+        waitToPairState: waitToPairState,
         size: 150,
-        data: waitToPairState.pairingUrl(),
         color: theme.colorScheme.background,
       ),
       const SizedBox(height: 30),
@@ -94,6 +94,104 @@ Widget waitToPair(
       const Spacer(flex: 2),
     ],
   );
+}
+
+class _WaitToPairQrPanel extends StatefulWidget {
+  const _WaitToPairQrPanel({
+    required this.waitToPairState,
+    required this.size,
+    required this.color,
+  });
+
+  final WaitToPairState waitToPairState;
+  final double size;
+  final Color color;
+
+  @override
+  State<_WaitToPairQrPanel> createState() => _WaitToPairQrPanelState();
+}
+
+class _WaitToPairQrPanelState extends State<_WaitToPairQrPanel> {
+  late Future<String> _pairingUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _pairingUrl = widget.waitToPairState.pairingUrl();
+  }
+
+  @override
+  void didUpdateWidget(covariant _WaitToPairQrPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.waitToPairState != widget.waitToPairState) {
+      _pairingUrl = widget.waitToPairState.pairingUrl();
+    }
+  }
+
+  void _onRefresh() {
+    setState(() {
+      _pairingUrl = widget.waitToPairState.refreshPairingUrl();
+    });
+  }
+
+  Future<void> _onCopy() async {
+    final pairingUrl = await _pairingUrl;
+
+    copyToClipboardAutoClear(pairingUrl);
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Secure link copied')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            _SendQr(
+              size: widget.size,
+              data: _pairingUrl,
+              color: widget.color,
+            ),
+            Positioned(
+              top: -12,
+              right: -12,
+              child: Material(
+                color: theme.colorScheme.surface,
+                elevation: 3,
+                shape: const CircleBorder(),
+                child: IconButton(
+                  onPressed: _onRefresh,
+                  icon: const Icon(Icons.refresh_rounded),
+                  iconSize: 20,
+                  tooltip: "Refresh QR code",
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: 280,
+          child: FilledButton.icon(
+            onPressed: _onCopy,
+            icon: const Icon(Icons.link_rounded),
+            label: const Text("Copy Secure Link"),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 @swidget

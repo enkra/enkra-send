@@ -100,6 +100,14 @@ class WaitToPairState extends AppState {
     return '$ENKRA_SEND_APP_URL/#/$channelId/$publicKey';
   }
 
+  Future<String> refreshPairingUrl() async {
+    await isInitialized;
+
+    _cipher = await initCipher();
+
+    return pairingUrl();
+  }
+
   _hostListen(channel) async {
     channel.listen((msg) async {
       final message = jsonDecode(msg);
