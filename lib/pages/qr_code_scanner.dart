@@ -1,9 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:functional_widget_annotation/functional_widget_annotation.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 part 'qr_code_scanner.g.dart';
 
@@ -15,19 +13,11 @@ class QrCodeScanner extends StatefulWidget {
 }
 
 class _QrCodeScannerState extends State<QrCodeScanner> {
-  QRViewController? controller;
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-
-  // In order to get hot reload to work we need to pause the camera if the platform
-  // is android, or resume the camera if the platform is iOS.
-  @override
-  void reassemble() {
-    super.reassemble();
-    if (Platform.isAndroid) {
-      controller!.pauseCamera();
-    }
-    controller!.resumeCamera();
-  }
+  final MobileScannerController controller = MobileScannerController(
+    detectionSpeed: DetectionSpeed.noDuplicates,
+  );
+  bool _didScan = false;
+  bool _didShowPermissionError = false;
 
   @override
   Widget build(BuildContext context) {
@@ -44,46 +34,65 @@ class _QrCodeScannerState extends State<QrCodeScanner> {
   }
 
   Widget _buildQrView(BuildContext context) {
-    final theme = Theme.of(context);
-
-    // To ensure the Scanner view is properly sizes after rotation
-    // we need to listen for Flutter SizeChanged notification and update controller
     return Stack(
       alignment: AlignmentDirectional.center,
       children: [
-        QRView(
-          key: qrKey,
-          onQRViewCreated: (ctrl) => _onQRViewCreated(ctrl, context),
-          onPermissionSet: (ctrl, p) => _onPermissionSet(context, ctrl, p),
+        MobileScanner(
+          controller: controller,
+          onDetect: (capture) => _onDetect(capture, context),
+          errorBuilder: _onScannerError,
         ),
         const _ScannerOverlay(),
       ],
     );
   }
 
-  void _onQRViewCreated(QRViewController controller, context) {
-    this.controller = controller;
+  void _onDetect(BarcodeCapture capture, BuildContext context) {
+    if (_didScan) {
+      return;
+    }
 
-    controller.scannedDataStream
-        .distinct((p, n) => p.code == p.code)
-        .listen((scanData) {
-      if (scanData.code != null) {
-        Navigator.pop(context, scanData.code!);
+    for (final barcode in capture.barcodes) {
+      final value = barcode.rawValue;
+      if (value != null && value.isNotEmpty) {
+        _didScan = true;
+        controller.stop();
+        Navigator.pop(context, value);
+        return;
       }
-    });
+    }
   }
 
-  void _onPermissionSet(BuildContext context, QRViewController ctrl, bool p) {
-    if (!p) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('no Permission')),
-      );
+  Widget _onScannerError(BuildContext context, MobileScannerException error) {
+    if (error.errorCode == MobileScannerErrorCode.permissionDenied &&
+        !_didShowPermissionError) {
+      _didShowPermissionError = true;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('no Permission')),
+        );
+      });
     }
+
+    return const ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: Icon(
+          Icons.error,
+          color: Colors.white,
+        ),
+      ),
+    );
   }
 
   @override
   void dispose() {
-    controller?.dispose();
+    controller.dispose();
     super.dispose();
   }
 }
